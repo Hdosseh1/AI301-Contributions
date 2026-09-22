@@ -1,4 +1,4 @@
-# Contribution [#]: [Issue Title]
+# Contribution 1: Cross-compile samples/nvcuda for Linux arm64
 
 **Contribution Number:** 1 
 **Student:** Hayden Dosseh  
