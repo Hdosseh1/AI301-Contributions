@@ -1,16 +1,15 @@
 # Contribution [#]: [Issue Title]
 
-**Contribution Number:** [1 / 2 / 3]  
-**Student:** [Your Name]  
-**Issue:** [GitHub issue link]  
-**Status:** [Phase I / Phase II / Phase III / Phase IV] [In Progress / Complete]
+**Contribution Number:** 1 
+**Student:** Hayden Dosseh  
+**Issue:** https://github.com/BOINC/boinc/issues/7162 
+**Status:** Phase I  Complete
 
 ---
 
 ## Why I Chose This Issue
 
-[1-2 paragraphs explaining why this issue interests you, how it matches your skills/learning goals, what you hope to learn]
-
+I'm interested in this issue because it sits right at the intersection of embedded/hardware systems and applied ML, which is where most of my project work has been — I've built neural network accelerators on FPGA (using VHDL on a PYNQ-Z1), done on-device ML inference with MediaPipe and PyTorch, and worked with cross-architecture constraints on STM32 and Raspberry Pi platforms as part of my hardware security research. Cross-compiling CUDA samples for arm64 combines exactly that background: understanding toolchains, linker/library paths, and target-architecture flags for GPU-accelerated code running on ARM boards like Jetson — hardware increasingly used for edge ML deployment, which is a space I want to keep working in. I'm hoping this issue teaches me the practical mechanics of cross-compilation tooling (host vs. target compilers, nvcc's -ccbin flag, and library path conventions) in a real open-source build system, while also giving me my first experience navigating a large collaborative C++ codebase's contribution process from issue to reviewed PR.
 ---
 
 ## Understanding the Issue
