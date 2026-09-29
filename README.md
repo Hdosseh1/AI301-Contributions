@@ -3,7 +3,7 @@
 **Contribution Number:** 1 
 **Student:** Hayden Dosseh  
 **Issue:** https://github.com/BOINC/boinc/issues/7162 
-**Status:** Phase I  Complete
+**Status:** Phase II  Complete
 
 ---
 
@@ -36,19 +36,22 @@ I'm interested in this issue because it sits right at the intersection of embedd
 
 ### Environment Setup
 
-[Notes on setting up your local development environment - challenges you faced, how you solved them]
+Ubuntu 24.04 (x86_64). Installed the build dependencies (`libssl-dev`, `libcurl4-openssl-dev`, `m4`, `pkg-config`) and the arm64 cross-compiler (`g++-aarch64-linux-gnu`, `gcc-aarch64-linux-gnu`). Cloned BOINC and built only the core libraries with `./_autosetup` and `./configure --disable-server --disable-manager --disable-client`, then `make`. This produces `api/libboinc_api.a` and `lib/libboinc.a`, which the nvcuda sample links against.
+
+Challenge: my machine has no NVIDIA GPU or CUDA toolkit, so I couldn't finish a full CUDA build. I reproduced the build-system side of the issue instead: the hardcoded paths, compilers and architecture assumptions in the Makefile.
 
 ### Steps to Reproduce
 
-1. [Step 1]
-2. [Step 2]
-3. [Observed result]
+1. Build the BOINC core libraries natively on x64 (see above), then run `make` in `samples/nvcuda`.
+2. Result: the build fails at the first compile step with `cuda_runtime.h: No such file or directory`. The Makefile hardcodes `CUDA_INSTALL_PATH ?= /usr/local/cuda` and `-L$(CUDA_INSTALL_PATH)/lib64`, both x64 host paths.
+3. Compile a small BOINC API program with `aarch64-linux-gnu-g++` and link it against the x64-built `libboinc_api.a` and `libboinc.a`. This is what the Makefile would do if you only swapped `CXX`.
+4. Observed result: the linker fails with `skipping incompatible ../boinc/api/libboinc_api.a` and `cannot find -lboinc_api` (the same happens for `-lboinc`).
 
 ### Reproduction Evidence
 
 - **Commit showing reproduction:** [Link to commit in your fork]
-- **Screenshots/logs:** [If applicable]
-- **My findings:** [What you discovered during reproduction]
+- **Screenshots/logs:** 
+- **My findings:** The Makefile has no concept of a target architecture. It assumes host = target = x64 in three places: the CUDA library path (`lib64`), the host C++ compiler (`CXX` defaults to native `g++`), and the `nvcc` call (no `-ccbin`, so it uses the native host compiler). I also found that BOINC's own `configure` already supports `--host=aarch64-linux-gnu`, and the core libraries cross-built for arm64 without errors. So the gap is only in the sample's Makefile.
 
 ---
 
@@ -56,12 +59,18 @@ I'm interested in this issue because it sits right at the intersection of embedd
 
 ### Analysis
 
-[Your analysis of the root cause - what's causing the issue?]
+The root cause is that `samples/nvcuda/Makefile` is written only for a native x64 build. To cross-compile for arm64 you need three things to point at arm64 versions: the host compiler, the CUDA target libraries and headers, and the BOINC libraries. Today the Makefile hardcodes the x64 version of each, with no variable to switch them.
 
 ### Proposed Solution
 
-[High-level description of your fix approach]
+Add an optional `TARGET_ARCH` variable to `samples/nvcuda/Makefile` so the native x64 build keeps working unchanged. When it is set to `aarch64`, the Makefile would:
 
+1. Set `CXX` to `aarch64-linux-gnu-g++`.
+2. Point the CUDA include and library paths at NVIDIA's arm64 cross-toolkit (e.g. `$(CUDA_INSTALL_PATH)/targets/sbsa-linux/`) instead of `lib64`.
+3. Pass `-ccbin aarch64-linux-gnu-g++` to `nvcc` so the host-side code in `cuda_kernel.cu` is compiled for arm64.
+4. Link against BOINC libraries built with `./configure --host=aarch64-linux-gnu`.
+
+I plan to also document the steps: install NVIDIA's cross-aarch64 CUDA packages, cross-build the BOINC libraries, then run `make TARGET_ARCH=aarch64`. If the maintainers want it, I would add a CI job to check the cross-build.
 ### Implementation Plan
 
 Using UMPIRE framework (adapted):
